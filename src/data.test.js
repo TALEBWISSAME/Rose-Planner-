@@ -1,0 +1,7 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {monthlyStats,validateData,emptyData,validDate} from './data.js';
+const base={id:'1',type:'service',client:'Alice',date:'2026-10-22',time:'09:00',price:50,status:'done',paid:true,reminder:1,notes:'',address:'',duration:''};
+test('Les revenus excluent les prestations prévues, annulées et les rendez-vous',()=>{const s=monthlyStats([base,{...base,id:'2',paid:false,price:30},{...base,id:'3',status:'cancelled',price:100},{...base,id:'4',status:'planned',price:200},{...base,id:'5',type:'appointment',price:99},{...base,id:'6',date:'2026-09-01'}],'2026-10');assert.equal(s.count,2);assert.equal(s.total,80);assert.equal(s.paid,50);assert.equal(s.unpaid,30)});
+test('Une sauvegarde JSON conserve les événements et notes',()=>{const d={version:1,events:[base],notes:[{id:'n1',title:'Courses',text:'Produits'}]};assert.deepEqual(validateData(JSON.parse(JSON.stringify(d))),d);assert.deepEqual(validateData(emptyData()),emptyData())});
+test('Les sauvegardes invalides et identifiants dupliqués sont rejetés',()=>{for(const value of [null,{}, {version:2,events:[],notes:[]},{version:1,events:[base,base],notes:[]},{version:1,events:[{...base,price:-1}],notes:[]},{version:1,events:[{...base,date:'2026-02-30'}],notes:[]}])assert.throws(()=>validateData(value));assert.equal(validDate('2026-02-30'),false);assert.equal(validDate('2028-02-29'),true)});
